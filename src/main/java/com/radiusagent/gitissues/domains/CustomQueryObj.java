@@ -12,6 +12,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @Getter
+/**
+ * Represents the object type to be used in query parameters for github api.
+ * */
 public class CustomQueryObj {
 	private String userName;
 	private String repoName;

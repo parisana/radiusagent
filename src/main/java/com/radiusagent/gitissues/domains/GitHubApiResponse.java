@@ -11,6 +11,8 @@ import java.util.Arrays;
 
 /**
  * @author Parisana
+ *
+ * Represents the GithubApi response object type
  */
 @Getter
 @Setter

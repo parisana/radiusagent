@@ -43,7 +43,7 @@ class SimpleController{
 			return Flux.concat(gitSearchService.getTotalOpenIssuesCount(userName, repoName), gitSearchService.getLast24HrsOpenIssuesCount(userName, repoName),
 					gitSearchService.getLast7DaysExceptLast24HrsOpenIssuesCount(userName, repoName),
 					gitSearchService.getAllExceptLast7DaysOpenIssuesCount(userName, repoName))
-					.collectMap(s -> s.split(":")[0], s -> s.split(":")[1]);
+					.collectMap(s -> s.split(":")[0], s -> s.split(":")[1]); // combine all mono's and map them to a single mono that will contain the map.
 		} catch (MalformedURLException e) {
 			throw new RuntimeException(e);
 		}
