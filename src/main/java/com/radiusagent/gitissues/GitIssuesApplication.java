@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -57,6 +58,14 @@ public class GitIssuesApplication {
 
 }
 
+@Getter@NoArgsConstructor@AllArgsConstructor@Builder
+class Result{
+	private int _0;
+	private int _1;
+	private int _2;
+	private int _3;
+}
+
 @RestController
 @Slf4j
 class SimpleController{
@@ -66,8 +75,9 @@ class SimpleController{
 		this.webClient = webClient;
 	}
 
+	@CrossOrigin(origins = "*")
 	@GetMapping("/search")
-	public Flux<Map<String, Integer>> index(@RequestParam String githubUrl){
+	public Mono<Map<String, String>> index(@RequestParam String githubUrl){
 		final URL receivedGitRepoUrl;
 		try {
 			receivedGitRepoUrl = new URL(githubUrl);
@@ -76,12 +86,14 @@ class SimpleController{
 			final String userName = split[0];
 			final String repoName = split[1];
 			return Flux.concat(getTotalOpenIssuesCount(userName, repoName), getLast24HrsOpenIssuesCount(userName, repoName),
-					getLast7DaysExceptLast24HrsOpenIssuesCount(userName, repoName), getAllExceptLast7DaysOpenIssuesCount(userName, repoName));
+					getLast7DaysExceptLast24HrsOpenIssuesCount(userName, repoName),
+					getAllExceptLast7DaysOpenIssuesCount(userName, repoName))
+					.collectMap(s -> s.split(":")[0], s -> s.split(":")[1]);
 		} catch (MalformedURLException e) {
 			throw new RuntimeException(e);
 		}
 	}
-	private Mono<Map<String, Integer>> getTotalOpenIssuesCount(String userName, String repoName){
+	private Mono<String> getTotalOpenIssuesCount(String userName, String repoName){
 
 		final CustomQueryObj build = CustomQueryObj.builder()
 				.userName(userName)
@@ -91,7 +103,7 @@ class SimpleController{
 
 	}
 
-	private Mono<Map<String, Integer>> getLast24HrsOpenIssuesCount(String userName, String repoName) {
+	private Mono<String> getLast24HrsOpenIssuesCount(String userName, String repoName) {
 
 		final Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
 		final CustomQueryObj customQueryObj = CustomQueryObj.builder()
@@ -102,7 +114,7 @@ class SimpleController{
 		return getCountOfOpenIssue(customQueryObj, CustomReturnKeyForGithubApi._1);
 	}
 
-	private Mono<Map<String, Integer>> getLast7DaysExceptLast24HrsOpenIssuesCount(String userName, String repoName) {
+	private Mono<String> getLast7DaysExceptLast24HrsOpenIssuesCount(String userName, String repoName) {
 
 		final Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
 		final CustomQueryObj customQueryObj = CustomQueryObj.builder()
@@ -114,7 +126,7 @@ class SimpleController{
 		return getCountOfOpenIssue(customQueryObj, CustomReturnKeyForGithubApi._2);
 	}
 
-	private Mono<Map<String, Integer>> getAllExceptLast7DaysOpenIssuesCount(String userName, String repoName) {
+	private Mono<String> getAllExceptLast7DaysOpenIssuesCount(String userName, String repoName) {
 
 		final Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
 		final CustomQueryObj customQueryObj = CustomQueryObj.builder()
@@ -125,7 +137,7 @@ class SimpleController{
 		return getCountOfOpenIssue(customQueryObj, CustomReturnKeyForGithubApi._3);
 	}
 
-	private Mono<Map<String, Integer>> getCountOfOpenIssue(CustomQueryObj customQueryObj, CustomReturnKeyForGithubApi key) {
+	private Mono<String> getCountOfOpenIssue(CustomQueryObj customQueryObj, CustomReturnKeyForGithubApi key) {
 		MultiValueMap<String, String> attributes = new LinkedMultiValueMap<>();
 		attributes.put("is", Arrays.asList("public", "issue"));
 		attributes.put("page", Collections.singletonList("1"));
@@ -141,10 +153,10 @@ class SimpleController{
 						.path("/search/issues")
 						.queryParams(attributes)
 						.build())
-				.retrieve().bodyToMono(GitHubApiResponse.class).map(gitHubApiResponse -> Map.of(key.name(), gitHubApiResponse.getTotalCount()))
+				.retrieve().bodyToMono(GitHubApiResponse.class).map(gitHubApiResponse -> key.name()+":"+gitHubApiResponse.getTotalCount())
 				.onErrorResume(e-> {
 					log.info(e.getMessage());
-					return Mono.just(Map.of("error", key.ordinal()));
+					return Mono.just("error:" + key.ordinal());
 				});
 	}
 }
