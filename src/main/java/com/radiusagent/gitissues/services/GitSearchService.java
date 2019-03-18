@@ -97,11 +97,11 @@ public class GitSearchService {
      * */
     private Mono<String> getCountOfOpenIssue(CustomQueryObj customQueryObj, CustomReturnKeyForGithubApi key) {
         MultiValueMap<String, String> attributes = new LinkedMultiValueMap<>();
-        attributes.put("is", Arrays.asList("public", "issue"));
         attributes.put("page", Collections.singletonList("1"));
         attributes.put("per_page", Collections.singletonList("1"));
-        attributes.put("q", Collections.singletonList("repo:" + customQueryObj.getUserName() + "/" +
-                customQueryObj.getRepoName() + "+created:" + customQueryObj.getFrom() + ".." + customQueryObj.getTill()));
+        attributes.put("q", Collections.singletonList("repo:" + customQueryObj.getUserName() + "/" + customQueryObj.getRepoName() +
+                "+is:open+is:issue"+
+                "+created:" + customQueryObj.getFrom() + ".." + customQueryObj.getTill()));
 
         return webClient
                 .get()
