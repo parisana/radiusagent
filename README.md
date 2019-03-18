@@ -20,3 +20,6 @@ hit the uri: /search
 
 ## Improvements:
 Error handling to return proper error codes and messages.
+
+## Request rate
+As per GitHub api restrictions, there must be an average of 2 seconds between each request. Or else you'll receive 403 error.
